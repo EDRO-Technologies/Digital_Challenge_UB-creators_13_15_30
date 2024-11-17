@@ -1,0 +1,40 @@
+filebeat.inputs:
+  - type: filestream
+    id: dns-logs-stream 
+    enabled: true
+    paths:
+      - /usr/share/filebeat/*.log 
+    fields:
+      log_type: dns_access 
+    fields_under_root: true  
+    scan_frequency: 2s
+    parsers:
+      - multiline:
+          pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}:'
+          negate: true
+          match: after  
+
+processors:
+  - dissect:
+      tokenizer: '%{timestamp}: %{client_ip} %{domain}'
+      field: message
+      target_prefix: dissect
+  - rename:
+      fields:
+        - from: "dissect.timestamp"
+          to: "event.timestamp"
+        - from: "dissect.client_ip"
+          to: "client.ip"
+        - from: "dissect.domain"
+          to: "dns.domain"
+      ignore_missing: true
+  - add_fields:
+      target: ''
+      fields:
+        event.category: "dns"
+        event.type: "connection"
+
+output.logstash:
+  hosts: ["elk:5044"]
+  ssl_enabled: false
+  timeout: 15s  

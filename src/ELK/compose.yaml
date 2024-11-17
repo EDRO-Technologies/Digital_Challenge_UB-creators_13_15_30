@@ -1,0 +1,29 @@
+   version: "3"
+   services:
+     filebeat:
+       image: elastic/filebeat:8.15.4
+       container_name: filebeat
+       volumes:
+         - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+         - ./filebeat/logs:/usr/share/filebeat/log:ro
+       networks:
+         - elk-net
+       depends_on:
+         - elk
+
+     elk:
+       image: elk/con
+       container_name: elk
+       ports:
+         - "5601:5601"
+         - "9200:9200"
+         - "5044:5044"
+       networks:
+         - elk-net
+       volumes:
+         - ./logstash.conf:/etc/logstash/conf.d/logstash.conf
+
+   networks:
+     elk-net:
+       driver: bridge
+   
